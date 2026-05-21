@@ -1,0 +1,32 @@
+name: resto_pos_system
+description: Restaurant POS System - Flutter + MySQL
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  dio: ^5.7.0
+  get_it: ^8.0.2
+  go_router: ^14.6.2
+  shared_preferences: ^2.3.3
+  intl: ^0.19.0
+  fl_chart: ^0.69.2
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/products/
+    - assets/images/categories/
