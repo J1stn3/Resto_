@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '../core/di/injection.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/presentation/pages/login_page.dart';
-import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/admin/presentation/pages/admin_shell_page.dart';
 import '../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../features/admin/presentation/pages/admin_menu_page.dart';
@@ -23,8 +22,7 @@ class AppRouter {
       refreshListenable: _AuthRefresh(authBloc),
       redirect: (context, state) {
         final authState = authBloc.state;
-        final onAuthScreen =
-            state.matchedLocation == '/login' || state.matchedLocation == '/signup';
+        final onAuthScreen = state.matchedLocation == '/login';
 
         if (authState is AuthInitial || authState is AuthLoading) return null;
 
@@ -39,7 +37,6 @@ class AppRouter {
       },
       routes: [
         GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
-        GoRoute(path: '/signup', builder: (_, __) => const SignUpPage()),
         ShellRoute(
           builder: (_, __, child) => AdminShellPage(child: child),
           routes: [

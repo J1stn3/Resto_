@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS dining_tables (
     id CHAR(36) PRIMARY KEY,
     table_number VARCHAR(20) UNIQUE NOT NULL,
+    table_name VARCHAR(100),
     seating_capacity INT DEFAULT 4,
     location VARCHAR(50),
     is_occupied BOOLEAN DEFAULT FALSE,

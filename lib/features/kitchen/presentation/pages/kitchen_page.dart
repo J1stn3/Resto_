@@ -4,6 +4,7 @@ import '../../../../config/theme.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/models/order.dart';
+import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/state_views.dart';
 import '../../../../core/widgets/status_badge.dart';
 
@@ -62,8 +63,17 @@ class _KitchenPageState extends State<KitchenPage> {
     await _load(silent: true);
   }
 
+  int _gridColumns(BuildContext context) {
+    if (AppBreakpoints.isPhone(context)) return 1;
+    if (AppBreakpoints.isMobile(context)) return 2;
+    return 3;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final cols = _gridColumns(context);
+    final aspect = AppBreakpoints.isPhone(context) ? 0.85 : 0.75;
+
     return ColoredBox(
       color: AppTheme.darkBg,
       child: Column(
@@ -71,26 +81,67 @@ class _KitchenPageState extends State<KitchenPage> {
           Material(
             color: AppTheme.darkSurface,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
+              padding: AppBreakpoints.pagePadding(context).copyWith(top: 8, bottom: 8),
+              child: AppBreakpoints.isPhone(context)
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accent.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.kitchen_rounded, color: AppTheme.accent, size: 22),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Kitchen Display',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                              onPressed: () => _load(),
+                            ),
+                          ],
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Auto-refresh', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          value: _autoRefresh,
+                          onChanged: (v) => setState(() => _autoRefresh = v),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.kitchen_rounded, color: AppTheme.accent, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Kitchen Display',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
+                          ),
+                        ),
+                        const Text('Auto-refresh', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        Switch(value: _autoRefresh, onChanged: (v) => setState(() => _autoRefresh = v)),
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                          onPressed: () => _load(),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.kitchen_rounded, color: AppTheme.accent, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text('Kitchen Display', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
-                  ),
-                  const Text('Auto-refresh', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Switch(value: _autoRefresh, onChanged: (v) => setState(() => _autoRefresh = v)),
-                  IconButton(icon: const Icon(Icons.refresh_rounded, color: Colors.white), onPressed: () => _load()),
-                ],
-              ),
             ),
           ),
           Padding(
@@ -123,11 +174,12 @@ class _KitchenPageState extends State<KitchenPage> {
                   icon: Icons.restaurant,
                 )
               : GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
+                  padding: AppBreakpoints.pagePadding(context),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: cols,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: aspect,
                   ),
                   itemCount: _filtered.length,
                   itemBuilder: (_, i) => _KitchenCard(
@@ -207,7 +259,7 @@ class _KitchenCard extends StatelessWidget {
             ),
             Row(
               children: [
-                if (order.status == 'confirmed' || order.status == 'pending')
+                if (order.status == 'confirmed')
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(foregroundColor: Colors.white),

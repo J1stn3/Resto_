@@ -69,9 +69,9 @@ class _LoginPageState extends State<LoginPage> {
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  padding: AppBreakpoints.pagePadding(context).copyWith(top: 24, bottom: 32),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 400),
+                    constraints: BoxConstraints(maxWidth: AppBreakpoints.formMaxWidth(context)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -130,6 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     child: Text(
                                       'Demo · admin@system.com · admin123',
+                                      textAlign: TextAlign.center,
                                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                             color: AppTheme.primary,
                                             fontWeight: FontWeight.w500,
@@ -169,20 +170,6 @@ class _LoginPageState extends State<LoginPage> {
                                   icon: Icons.login_rounded,
                                   loading: loading,
                                   onPressed: _login,
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Don't have an account?",
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                    TextButton(
-                                      onPressed: loading ? null : () => context.go('/signup'),
-                                      child: const Text('Sign up'),
-                                    ),
-                                  ],
                                 ),
                               ],
                             ),

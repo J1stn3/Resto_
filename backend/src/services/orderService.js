@@ -76,12 +76,20 @@ async function createOrder(userId, body, forcedOrderType = null) {
     const orderId = uuidv4();
     const orderNumber = generateOrderNumber();
 
+    const initialStatus = 'confirmed';
+
     await conn.query(
       `INSERT INTO orders (id, order_number, table_id, user_id, customer_name, order_type, status,
         subtotal, tax_amount, discount_amount, total_amount, notes)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, 0, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
       [orderId, orderNumber, body.table_id || null, userId, body.customer_name || null,
-        orderType, subtotal, taxAmount, totalAmount, body.notes || null]
+        orderType, initialStatus, subtotal, taxAmount, totalAmount, body.notes || null]
+    );
+
+    await conn.query(
+      `INSERT INTO order_status_history (id, order_id, previous_status, new_status, changed_by, notes)
+       VALUES (?, ?, NULL, ?, ?, ?)`,
+      [uuidv4(), orderId, initialStatus, userId, 'Order placed']
     );
 
     for (const item of pricedItems) {

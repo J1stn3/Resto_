@@ -1,12 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../utils/parse_utils.dart';
-import '../widgets/money_text.dart';
+import 'money_text.dart';
+import 'responsive.dart';
 
 class SalesBarChart extends StatelessWidget {
-  const SalesBarChart({super.key, required this.data});
+  const SalesBarChart({super.key, required this.data, this.caption});
 
   final List<Map<String, dynamic>> data;
+  final String? caption;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,14 @@ class SalesBarChart extends StatelessWidget {
     final revenues = data.map((r) => toJsonDouble(r['revenue'])).toList();
     final maxY = revenues.isEmpty ? 1.0 : revenues.reduce((a, b) => a > b ? a : b) * 1.2;
 
-    return SizedBox(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (caption != null) ...[
+          Text(caption!, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
+          const SizedBox(height: 12),
+        ],
+        SizedBox(
       height: 220,
       child: BarChart(
         BarChartData(
@@ -64,6 +73,8 @@ class SalesBarChart extends StatelessWidget {
           ),
         ),
       ),
+    ),
+      ],
     );
   }
 }
@@ -75,28 +86,61 @@ class IncomeSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gross = toJsonDouble(summary['gross_income']);
+    final tax = toJsonDouble(summary['tax_collected']);
+    final net = toJsonDouble(summary['net_income']);
+    final orders = summary['total_orders'];
+    final orderLabel = orders != null ? '$orders completed orders' : null;
+
+    final cols = [
+      _col(context, 'Gross', gross, Icons.account_balance_wallet_outlined, const Color(0xFF2563EB)),
+      _col(context, 'Tax', tax, Icons.receipt_long_outlined, const Color(0xFFF59E0B)),
+      _col(context, 'Net', net, Icons.savings_outlined, const Color(0xFF10B981)),
+    ];
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+        padding: EdgeInsets.all(AppBreakpoints.isPhone(context) ? 16 : 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _col(context, 'Gross', toJsonDouble(summary['gross_income'])),
-            _col(context, 'Tax', toJsonDouble(summary['tax_collected'])),
-            _col(context, 'Net', toJsonDouble(summary['net_income'])),
+            if (orderLabel != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(orderLabel, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55))),
+              ),
+            if (AppBreakpoints.isPhone(context))
+              ...cols.map((c) => Padding(padding: const EdgeInsets.only(bottom: 16), child: c))
+            else
+              IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Expanded(child: cols[0]),
+                    VerticalDivider(width: 1, color: Theme.of(context).dividerColor),
+                    Expanded(child: cols[1]),
+                    VerticalDivider(width: 1, color: Theme.of(context).dividerColor),
+                    Expanded(child: cols[2]),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _col(BuildContext context, String label, double amount) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 4),
-        MoneyText(amount, bold: true, style: Theme.of(context).textTheme.titleLarge),
-      ],
+  Widget _col(BuildContext context, String label, double amount, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        children: [
+          Icon(icon, size: 22, color: color),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+          const SizedBox(height: 6),
+          MoneyText(amount, bold: true, style: Theme.of(context).textTheme.titleMedium),
+        ],
+      ),
     );
   }
 }

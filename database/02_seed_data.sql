@@ -42,21 +42,21 @@ INSERT INTO products (id, category_id, name, description, price, sku, preparatio
 ('p0000001-0000-4000-8000-000000000024', 'c0000001-0000-4000-8000-000000000006', 'Supreme Pizza', 'Pizza loaded with multiple toppings', 1000.00, 'PIZ003', 20, 3),
 ('p0000001-0000-4000-8000-000000000025', 'c0000001-0000-4000-8000-000000000006', 'Hawaiian Pizza', 'Pizza with ham and pineapple', 900.00, 'PIZ004', 16, 4);
 
-INSERT INTO dining_tables (id, table_number, seating_capacity, location) VALUES
-('t0000001-0000-4000-8000-000000000001', 'T01', 2, 'Main Floor'),
-('t0000001-0000-4000-8000-000000000002', 'T02', 4, 'Main Floor'),
-('t0000001-0000-4000-8000-000000000003', 'T03', 4, 'Main Floor'),
-('t0000001-0000-4000-8000-000000000004', 'T04', 6, 'Main Floor'),
-('t0000001-0000-4000-8000-000000000005', 'T05', 2, 'Main Floor'),
-('t0000001-0000-4000-8000-000000000006', 'T06', 4, 'Window Side'),
-('t0000001-0000-4000-8000-000000000007', 'T07', 4, 'Window Side'),
-('t0000001-0000-4000-8000-000000000008', 'T08', 8, 'Private Room'),
-('t0000001-0000-4000-8000-000000000009', 'T09', 2, 'Patio'),
-('t0000001-0000-4000-8000-000000000010', 'T10', 4, 'Patio'),
-('t0000001-0000-4000-8000-000000000011', 'BAR01', 1, 'Bar Counter'),
-('t0000001-0000-4000-8000-000000000012', 'BAR02', 1, 'Bar Counter'),
-('t0000001-0000-4000-8000-000000000013', 'BAR03', 1, 'Bar Counter'),
-('t0000001-0000-4000-8000-000000000014', 'TAKEOUT', 1, 'Takeout Counter');
+INSERT INTO dining_tables (id, table_number, table_name, seating_capacity, location) VALUES
+('t0000001-0000-4000-8000-000000000001', 'T01', 'Window Booth A', 2, 'Main Floor'),
+('t0000001-0000-4000-8000-000000000002', 'T02', 'Center Table B', 4, 'Main Floor'),
+('t0000001-0000-4000-8000-000000000003', 'T03', 'Center Table C', 4, 'Main Floor'),
+('t0000001-0000-4000-8000-000000000004', 'T04', 'Family Table D', 6, 'Main Floor'),
+('t0000001-0000-4000-8000-000000000005', 'T05', 'Corner Table E', 2, 'Main Floor'),
+('t0000001-0000-4000-8000-000000000006', 'T06', 'Window Table F', 4, 'Window Side'),
+('t0000001-0000-4000-8000-000000000007', 'T07', 'Window Table G', 4, 'Window Side'),
+('t0000001-0000-4000-8000-000000000008', 'T08', 'Private Room H', 8, 'Private Room'),
+('t0000001-0000-4000-8000-000000000009', 'T09', 'Patio Table I', 2, 'Patio'),
+('t0000001-0000-4000-8000-000000000010', 'T10', 'Patio Table J', 4, 'Patio'),
+('t0000001-0000-4000-8000-000000000011', 'BAR01', 'Bar Seat 1', 1, 'Bar Counter'),
+('t0000001-0000-4000-8000-000000000012', 'BAR02', 'Bar Seat 2', 1, 'Bar Counter'),
+('t0000001-0000-4000-8000-000000000013', 'BAR03', 'Bar Seat 3', 1, 'Bar Counter'),
+('t0000001-0000-4000-8000-000000000014', 'TAKEOUT', 'Takeout Counter', 1, 'Takeout Counter');
 
 INSERT INTO inventory (id, product_id, current_stock, minimum_stock, maximum_stock, unit_cost)
 SELECT UUID(), id, 50, 10, 100, price * 0.4 FROM products;

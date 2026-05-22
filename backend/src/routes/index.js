@@ -48,7 +48,7 @@ router.post('/counter/orders/:id/payments', authenticate, wrap(payments.processP
 
 // Kitchen
 router.get('/kitchen/orders', authenticate, wrap(kitchen.getKitchenOrders));
-router.patch('/kitchen/orders/:id/items/:item_id/status', authenticate, wrap(kitchen.updateOrderItemStatus));
+router.patch('/kitchen/orders/:id/items/:item_id/status', authenticate, wrap(kitchen.updateItemStatus));
 
 // Admin / management (authenticate only)
 router.get('/admin/dashboard/stats', authenticate, wrap(admin.dashboardStats));

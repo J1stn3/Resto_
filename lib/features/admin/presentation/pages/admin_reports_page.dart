@@ -6,6 +6,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/sales_chart.dart';
 import '../../../../core/utils/parse_utils.dart';
+import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/state_views.dart';
 
 class AdminReportsPage extends StatefulWidget {
@@ -69,7 +70,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> with SingleTickerPr
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: AppBreakpoints.pagePadding(context).copyWith(top: 8, bottom: 8),
           child: Row(
             children: [
               Expanded(
@@ -92,7 +93,11 @@ class _AdminReportsPageState extends State<AdminReportsPage> with SingleTickerPr
             ],
           ),
         ),
-        TabBar(controller: _tabs, tabs: const [Tab(text: 'Sales'), Tab(text: 'Orders'), Tab(text: 'Income')]),
+        TabBar(
+          controller: _tabs,
+          isScrollable: AppBreakpoints.isPhone(context),
+          tabs: const [Tab(text: 'Sales'), Tab(text: 'Orders'), Tab(text: 'Income')],
+        ),
         Expanded(
           child: _loading
           ? const AppLoadingView(message: 'Loading reports…')
@@ -102,7 +107,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> with SingleTickerPr
                   controller: _tabs,
                   children: [
                     ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppBreakpoints.pagePadding(context),
                       children: [
                         Card(
                           child: ListTile(
@@ -132,7 +137,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> with SingleTickerPr
                       ],
                     ),
                     ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppBreakpoints.pagePadding(context),
                       children: [
                         const Text('Orders by status (today)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 12),
@@ -147,7 +152,7 @@ class _AdminReportsPageState extends State<AdminReportsPage> with SingleTickerPr
                       ],
                     ),
                     ListView(
-                      padding: const EdgeInsets.all(24),
+                      padding: AppBreakpoints.pagePadding(context),
                       children: [
                         IncomeSummaryCard(summary: summary),
                         const SizedBox(height: 16),

@@ -17,13 +17,6 @@ class AuthRepository {
     return user;
   }
 
-  Future<User> signUp(String name, String email, String password) async {
-    final data = await _api.register(name, email, password);
-    final user = User.fromJson(data['user'] as Map<String, dynamic>);
-    await _prefs.setString(AppConfig.userKey, jsonEncode(user.toJson()));
-    return user;
-  }
-
   Future<void> logout() => _api.logout();
 
   Future<User> validateSession() async {

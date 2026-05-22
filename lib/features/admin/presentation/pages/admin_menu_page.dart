@@ -6,6 +6,7 @@ import '../../../../core/models/category.dart';
 import '../../../../core/models/product.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/product_image.dart';
+import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/state_views.dart';
 
 class AdminMenuPage extends StatefulWidget {
@@ -122,6 +123,7 @@ class _AdminMenuPageState extends State<AdminMenuPage> with SingleTickerProvider
         children: [
           TabBar(
             controller: _tabs,
+            isScrollable: AppBreakpoints.isPhone(context),
             tabs: const [Tab(text: 'Products'), Tab(text: 'Categories')],
           ),
           Expanded(child: _buildBody()),
@@ -145,7 +147,7 @@ class _AdminMenuPageState extends State<AdminMenuPage> with SingleTickerProvider
                     Column(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppBreakpoints.pagePadding(context),
                           child: TextField(
                             decoration: const InputDecoration(
                               labelText: 'Search products',
@@ -272,7 +274,7 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
     return AlertDialog(
       title: Text(widget.initial == null ? 'New Category' : 'Edit Category'),
       content: SizedBox(
-        width: 400,
+        width: AppBreakpoints.dialogContentWidth(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -335,7 +337,7 @@ class _ProductFormDialogState extends State<_ProductFormDialog> {
     return AlertDialog(
       title: Text(widget.product == null ? 'New Product' : 'Edit Product'),
       content: SizedBox(
-        width: 420,
+        width: AppBreakpoints.dialogContentWidth(context),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

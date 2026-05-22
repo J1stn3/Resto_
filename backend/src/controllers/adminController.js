@@ -17,11 +17,18 @@ async function dashboardStats(req, res) {
   const [[occupiedTables]] = await pool.query(
     `SELECT COUNT(*) as c FROM dining_tables WHERE is_occupied = TRUE`
   );
+  const [[totalTables]] = await pool.query(`SELECT COUNT(*) as c FROM dining_tables`);
+  const [[totalSeats]] = await pool.query(`SELECT COALESCE(SUM(seating_capacity), 0) as s FROM dining_tables`);
+  const total = totalTables.c;
+  const occupied = occupiedTables.c;
   return success(res, 'Dashboard stats retrieved successfully', {
     today_orders: todayOrders.c,
     today_revenue: parseFloat(todayRevenue.r),
     active_orders: activeOrders.c,
-    occupied_tables: occupiedTables.c,
+    total_tables: total,
+    occupied_tables: occupied,
+    available_tables: total - occupied,
+    total_seats: totalSeats.s,
   });
 }
 
@@ -240,7 +247,10 @@ async function listAdminTables(req, res) {
   if (req.query.location) { where += ' AND t.location LIKE ?'; params.push(`%${req.query.location}%`); }
   if (req.query.status === 'occupied') where += ' AND t.is_occupied = TRUE';
   if (req.query.status === 'available') where += ' AND t.is_occupied = FALSE';
-  if (req.query.search) { where += ' AND (t.table_number LIKE ? OR t.location LIKE ?)'; params.push(`%${req.query.search}%`, `%${req.query.search}%`); }
+  if (req.query.search) {
+    where += ' AND (t.table_number LIKE ? OR t.table_name LIKE ? OR t.location LIKE ?)';
+    params.push(`%${req.query.search}%`, `%${req.query.search}%`, `%${req.query.search}%`);
+  }
 
   const baseFrom = `FROM dining_tables t
     LEFT JOIN orders o ON t.id = o.table_id AND o.status NOT IN ('completed', 'cancelled')`;
@@ -252,7 +262,8 @@ async function listAdminTables(req, res) {
     [...params, perPage, offset]
   );
   const data = rows.map((r) => ({
-    id: r.id, table_number: r.table_number, seating_capacity: r.seating_capacity,
+    id: r.id, table_number: r.table_number, table_name: r.table_name,
+    seating_capacity: r.seating_capacity,
     location: r.location, is_occupied: !!r.is_occupied, created_at: r.created_at, updated_at: r.updated_at,
     current_order: r.order_id ? {
       id: r.order_id, order_number: r.order_number, customer_name: r.customer_name,
@@ -264,10 +275,11 @@ async function listAdminTables(req, res) {
 
 async function createTable(req, res) {
   const id = uuidv4();
-  const { table_number, seating_capacity = 4, location } = req.body;
+  const { table_number, table_name, seating_capacity = 4, location } = req.body;
+  const name = table_name?.trim() || `Table ${table_number}`;
   await pool.query(
-    'INSERT INTO dining_tables (id, table_number, seating_capacity, location) VALUES (?,?,?,?)',
-    [id, table_number, seating_capacity, location]
+    'INSERT INTO dining_tables (id, table_number, table_name, seating_capacity, location) VALUES (?,?,?,?,?)',
+    [id, table_number, name, seating_capacity, location]
   );
   return success(res, 'Table created successfully', { id }, 201);
 }
@@ -275,7 +287,7 @@ async function createTable(req, res) {
 async function updateTable(req, res) {
   const fields = [];
   const params = [];
-  for (const f of ['table_number', 'seating_capacity', 'location', 'is_occupied']) {
+  for (const f of ['table_number', 'table_name', 'seating_capacity', 'location', 'is_occupied']) {
     if (req.body[f] !== undefined) { fields.push(`${f} = ?`); params.push(req.body[f]); }
   }
   if (!fields.length) return error(res, 'No fields to update', 400);

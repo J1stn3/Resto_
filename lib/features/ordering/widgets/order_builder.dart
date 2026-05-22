@@ -6,6 +6,7 @@ import '../../../core/settings/app_settings.dart';
 import '../../../core/models/category.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/dining_table.dart';
+import '../../../core/models/order.dart';
 import '../../../core/models/order_item.dart';
 import '../../../core/widgets/money_text.dart';
 import '../../../core/widgets/product_image.dart';
@@ -17,13 +18,15 @@ class OrderBuilder extends StatefulWidget {
     super.key,
     required this.title,
     required this.onSubmit,
+    this.onOrderPlaced,
     this.fixedOrderType,
     this.requireTable = false,
     this.showOrderTypeSelector = true,
   });
 
   final String title;
-  final Future<void> Function(Map<String, dynamic> body) onSubmit;
+  final Future<dynamic> Function(Map<String, dynamic> body) onSubmit;
+  final void Function(String orderId)? onOrderPlaced;
   final String? fixedOrderType;
   final bool requireTable;
   final bool showOrderTypeSelector;
@@ -53,11 +56,13 @@ class _OrderBuilderState extends State<OrderBuilder> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       final cats = await _api.getCategories();
       final tables = await _api.getTables();
       final products = await _api.getProducts();
+      if (!mounted) return;
       setState(() {
         _categories = cats;
         _tables = tables;
@@ -65,8 +70,9 @@ class _OrderBuilderState extends State<OrderBuilder> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -102,9 +108,10 @@ class _OrderBuilderState extends State<OrderBuilder> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select a table')));
       return;
     }
+    if (!mounted) return;
     setState(() => _submitting = true);
     try {
-      await widget.onSubmit({
+      final result = await widget.onSubmit({
         'order_type': _orderType,
         if (_tableId != null) 'table_id': _tableId,
         if (_customerName != null && _customerName!.isNotEmpty) 'customer_name': _customerName,
@@ -116,19 +123,34 @@ class _OrderBuilderState extends State<OrderBuilder> {
                 })
             .toList(),
       });
+      if (!mounted) return;
+      final orderId = result is Order
+          ? result.id
+          : result is Map<String, dynamic>
+              ? result['id'] as String?
+              : null;
       setState(() {
         _cart.clear();
         _tableId = null;
         _customerName = null;
         _submitting = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order created successfully'), backgroundColor: Colors.green));
-        await _load();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Order sent to kitchen — collect payment on Payment tab'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      if (orderId != null) {
+        widget.onOrderPlaced?.call(orderId);
       }
+      // Tab switch to Payment may dispose this widget; only reload if still visible.
+      if (mounted) await _load();
     } catch (e) {
+      if (!mounted) return;
       setState(() => _submitting = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -146,17 +168,31 @@ class _OrderBuilderState extends State<OrderBuilder> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.showOrderTypeSelector)
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'dine_in', label: Text('Dine In'), icon: Icon(Icons.table_restaurant)),
-              ButtonSegment(value: 'takeout', label: Text('Takeout'), icon: Icon(Icons.shopping_bag)),
-              ButtonSegment(value: 'delivery', label: Text('Delivery'), icon: Icon(Icons.delivery_dining)),
-            ],
-            selected: {_orderType},
-            onSelectionChanged: (s) => setState(() => _orderType = s.first),
-          ),
-        if (widget.showOrderTypeSelector) const SizedBox(height: 12),
+        if (widget.showOrderTypeSelector) ...[
+          if (AppBreakpoints.isPhone(context))
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: _orderType,
+              decoration: const InputDecoration(labelText: 'Order type', border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(value: 'dine_in', child: Text('Dine in')),
+                DropdownMenuItem(value: 'takeout', child: Text('Takeout')),
+                DropdownMenuItem(value: 'delivery', child: Text('Delivery')),
+              ],
+              onChanged: (v) => setState(() => _orderType = v ?? 'dine_in'),
+            )
+          else
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'dine_in', label: Text('Dine In'), icon: Icon(Icons.table_restaurant)),
+                ButtonSegment(value: 'takeout', label: Text('Takeout'), icon: Icon(Icons.shopping_bag)),
+                ButtonSegment(value: 'delivery', label: Text('Delivery'), icon: Icon(Icons.delivery_dining)),
+              ],
+              selected: {_orderType},
+              onSelectionChanged: (s) => setState(() => _orderType = s.first),
+            ),
+          const SizedBox(height: 12),
+        ],
         if (_orderType == 'dine_in' || widget.requireTable)
           DropdownButtonFormField<String>(
             isExpanded: true,
@@ -166,7 +202,7 @@ class _OrderBuilderState extends State<OrderBuilder> {
                 .map((t) => DropdownMenuItem(
                       value: t.id,
                       child: Text(
-                        '${t.tableNumber}${t.location != null ? ' • ${t.location}' : ''}${t.isOccupied ? ' (busy)' : ''}',
+                        '${t.displayName} (#${t.tableNumber}) · ${t.seatsLabel}${t.isOccupied ? ' · busy' : ''}',
                         overflow: TextOverflow.ellipsis,
                       ),
                     ))
@@ -358,33 +394,43 @@ class _OrderBuilderState extends State<OrderBuilder> {
   }
 
   Widget _buildWideLayout(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(width: 180, child: _buildCategoryList(context)),
-        const VerticalDivider(width: 1),
-        Expanded(
-          flex: 3,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildOrderOptions(),
-                const SizedBox(height: 12),
-                Expanded(child: _buildProductGrid(context)),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cartW = (constraints.maxWidth * 0.26).clamp(260.0, 360.0);
+        return Row(
+          children: [
+            SizedBox(width: 168, child: _buildCategoryList(context)),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildOrderOptions(),
+                    const SizedBox(height: 12),
+                    Expanded(child: _buildProductGrid(context)),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        const VerticalDivider(width: 1),
-        SizedBox(width: 300, child: Padding(padding: const EdgeInsets.all(12), child: _buildCartPanel(context, scrollable: true))),
-      ],
+            const VerticalDivider(width: 1),
+            SizedBox(
+              width: cartW,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: _buildCartPanel(context, scrollable: true),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildStackedLayout(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
+      padding: AppBreakpoints.pagePadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

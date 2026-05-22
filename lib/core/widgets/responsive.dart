@@ -1,17 +1,63 @@
 import 'package:flutter/material.dart';
 
-/// Mobile-first breakpoints. Most layouts use [isMobile] (< 900px).
+/// Mobile-first breakpoints used across the app.
 class AppBreakpoints {
-  static const double mobile = 900;
+  static const double phone = 600;
+  static const double tablet = 900;
 
-  static bool isMobile(BuildContext context) =>
-      MediaQuery.sizeOf(context).width < mobile;
+  static double width(BuildContext context) => MediaQuery.sizeOf(context).width;
 
-  static EdgeInsets pagePadding(BuildContext context) =>
-      EdgeInsets.all(isMobile(context) ? 16 : 24);
+  static bool isPhone(BuildContext context) => width(context) < phone;
 
-  static int gridColumns(BuildContext context, {int mobile = 2, int desktop = 4}) =>
-      isMobile(context) ? mobile : desktop;
+  /// Viewport under 900px — drawer, bottom nav, stacked layouts.
+  static bool isMobile(BuildContext context) => width(context) < tablet;
+
+  static bool isTablet(BuildContext context) {
+    final w = width(context);
+    return w >= phone && w < tablet;
+  }
+
+  /// Viewport 900px and wider — sidebar, multi-column layouts.
+  static bool isDesktop(BuildContext context) => !isMobile(context);
+
+  static bool useDrawerNav(BuildContext context) => isMobile(context);
+
+  static bool useBottomNav(BuildContext context) => isMobile(context);
+
+  static EdgeInsets pagePadding(BuildContext context) {
+    if (isPhone(context)) return const EdgeInsets.all(12);
+    if (isMobile(context)) return const EdgeInsets.all(16);
+    return const EdgeInsets.all(24);
+  }
+
+  static int gridColumns(
+    BuildContext context, {
+    int phoneCols = 2,
+    int tabletCols = 3,
+    int desktopCols = 4,
+  }) {
+    if (isPhone(context)) return phoneCols;
+    if (isMobile(context)) return tabletCols;
+    return desktopCols;
+  }
+
+  static double dialogContentWidth(BuildContext context) {
+    final w = width(context);
+    if (isPhone(context)) return w - 32;
+    if (isMobile(context)) return w * 0.92;
+    return 420;
+  }
+
+  static double formMaxWidth(BuildContext context) {
+    if (isPhone(context)) return double.infinity;
+    return 440;
+  }
+
+  /// Drawer width capped for small phones.
+  static double drawerWidth(BuildContext context) {
+    final w = width(context);
+    return w < 360 ? w * 0.88 : 280;
+  }
 }
 
 /// Scales menu / POS image sizes from screen width.
@@ -25,48 +71,40 @@ class AppImageSizes {
     return (w * fraction).clamp(min, max);
   }
 
-  /// Product tile thumbnail (POS grid, list rows).
   static double productThumb(BuildContext context) =>
       _scale(context, min: 40, max: 64, fraction: 0.11);
 
-  /// Cart line item thumbnail.
   static double cartThumb(BuildContext context) =>
       (productThumb(context) * 0.78).clamp(32, 52);
 
-  /// Admin menu list leading image.
   static double listThumb(BuildContext context) =>
       (productThumb(context) * 0.9).clamp(40, 56);
 
-  /// Category chip avatar radius.
   static double categoryChip(BuildContext context) =>
       (productThumb(context) * 0.22).clamp(10, 14);
 
-  /// Category sidebar / drawer list avatar radius.
   static double categoryList(BuildContext context) =>
       (productThumb(context) * 0.3).clamp(12, 18);
 
-  /// Drawer user avatar radius.
   static double drawerAvatar(BuildContext context) =>
       _scale(context, min: 24, max: 32, fraction: 0.07);
 
-  /// POS product grid column count.
   static int posGridColumns(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
-    if (w < 480) return 1;
+    if (w < AppBreakpoints.phone) return 1;
     if (w < 720) return 2;
     if (w < 1100) return 3;
     return 4;
   }
 
-  /// Grid tile aspect ratio from thumb + text row height.
   static double posTileAspectRatio(BuildContext context, {int? columns}) {
     final cols = columns ?? posGridColumns(context);
     final thumb = productThumb(context);
     final rowHeight = thumb + 36;
     final spacing = 8.0 * (cols - 1);
-    final horizontalPad = 24.0;
-    final cellWidth = (MediaQuery.sizeOf(context).width - horizontalPad - spacing) / cols;
-    return (cellWidth / rowHeight).clamp(2.2, 3.6);
+    final pad = AppBreakpoints.pagePadding(context).horizontal + 8;
+    final cellWidth = (MediaQuery.sizeOf(context).width - pad - spacing) / cols;
+    return (cellWidth / rowHeight).clamp(1.8, 3.6);
   }
 
   static double productLabelSize(BuildContext context) =>

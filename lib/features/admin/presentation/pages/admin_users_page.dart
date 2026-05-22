@@ -4,6 +4,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../../core/widgets/app_ui.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/models/user.dart';
+import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/state_views.dart';
 
 class AdminUsersPage extends StatefulWidget {
@@ -101,11 +102,13 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
               : _users.isEmpty
                   ? const EmptyStateView(message: 'No users yet')
                   : ListView.builder(
+                      padding: AppBreakpoints.pagePadding(context),
                       itemCount: _users.length,
                       itemBuilder: (_, i) {
                         final u = _users[i];
+                        final phone = AppBreakpoints.isPhone(context);
                         return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
@@ -114,9 +117,35 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                 style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
                               ),
                             ),
-                            title: Text(u.name),
-                            subtitle: Text(u.email),
-                            trailing: Row(
+                            title: Text(u.name, overflow: TextOverflow.ellipsis),
+                            subtitle: phone
+                                ? Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(u.email, overflow: TextOverflow.ellipsis),
+                                      const SizedBox(height: 6),
+                                      Chip(
+                                        label: Text(u.isActive ? 'Active' : 'Inactive', style: const TextStyle(fontSize: 11)),
+                                        visualDensity: VisualDensity.compact,
+                                        backgroundColor: u.isActive ? Colors.green.shade100 : Colors.grey.shade300,
+                                      ),
+                                    ],
+                                  )
+                                : Text(u.email, overflow: TextOverflow.ellipsis),
+                            trailing: phone
+                                ? PopupMenuButton<String>(
+                                    onSelected: (v) {
+                                      if (v == 'edit') _editUser(u);
+                                      if (v == 'toggle') _toggleActive(u);
+                                      if (v == 'delete') _deleteUser(u);
+                                    },
+                                    itemBuilder: (_) => [
+                                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                      PopupMenuItem(value: 'toggle', child: Text(u.isActive ? 'Deactivate' : 'Activate')),
+                                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                    ],
+                                  )
+                                : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Chip(
@@ -180,7 +209,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
     return AlertDialog(
       title: Text(editing ? 'Edit User' : 'New User'),
       content: SizedBox(
-        width: 400,
+        width: AppBreakpoints.dialogContentWidth(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

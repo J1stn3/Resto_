@@ -19,12 +19,23 @@ class CounterPage extends StatefulWidget {
 
 class _CounterPageState extends State<CounterPage> with SingleTickerProviderStateMixin {
   final _api = sl<ApiClient>();
+  final _paymentTabKey = GlobalKey<_PaymentTabState>();
   late TabController _tabs;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+  }
+
+  void _goToPayment(String orderId) {
+    _tabs.animateTo(1);
+    void select() => _paymentTabKey.currentState?.reloadAndSelect(orderId);
+    if (_paymentTabKey.currentState != null) {
+      select();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => select());
+    }
   }
 
   @override
@@ -40,9 +51,16 @@ class _CounterPageState extends State<CounterPage> with SingleTickerProviderStat
       children: [
         TabBar(
           controller: _tabs,
-          tabs: const [
-            Tab(text: 'Create Order', icon: Icon(Icons.add_shopping_cart)),
-            Tab(text: 'Process Payment', icon: Icon(Icons.payment)),
+          isScrollable: AppBreakpoints.isPhone(context),
+          tabs: [
+            Tab(
+              text: 'Create Order',
+              icon: AppBreakpoints.isPhone(context) ? null : const Icon(Icons.add_shopping_cart),
+            ),
+            Tab(
+              text: 'Payment',
+              icon: AppBreakpoints.isPhone(context) ? null : const Icon(Icons.payment),
+            ),
           ],
         ),
         Expanded(
@@ -52,8 +70,9 @@ class _CounterPageState extends State<CounterPage> with SingleTickerProviderStat
               OrderBuilder(
                 title: 'Counter',
                 onSubmit: (body) => _api.createOrder(body),
+                onOrderPlaced: _goToPayment,
               ),
-              const _PaymentTab(),
+              _PaymentTab(key: _paymentTabKey),
             ],
           ),
         ),
@@ -63,7 +82,7 @@ class _CounterPageState extends State<CounterPage> with SingleTickerProviderStat
 }
 
 class _PaymentTab extends StatefulWidget {
-  const _PaymentTab();
+  const _PaymentTab({super.key});
 
   @override
   State<_PaymentTab> createState() => _PaymentTabState();
@@ -92,6 +111,34 @@ class _PaymentTabState extends State<_PaymentTab> {
     super.dispose();
   }
 
+  Future<void> reload() => _load();
+
+  Future<void> reloadAndSelect(String orderId) async {
+    await _load();
+    Order? match;
+    for (final o in _orders) {
+      if (o.id == orderId) {
+        match = o;
+        break;
+      }
+    }
+    if (match != null) {
+      await _selectOrder(match);
+      return;
+    }
+    try {
+      final o = await _api.getOrder(orderId);
+      if (!mounted) return;
+      if (!['completed', 'cancelled'].contains(o.status)) {
+        await _selectOrder(o);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -99,11 +146,15 @@ class _PaymentTabState extends State<_PaymentTab> {
     });
     try {
       final all = await _api.getOrders();
+      if (!mounted) return;
       setState(() {
-        _orders = all.where((o) => !['completed', 'cancelled'].contains(o.status)).toList();
+        final open = all.where((o) => !['completed', 'cancelled'].contains(o.status)).toList();
+        open.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+        _orders = open;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -198,15 +249,32 @@ class _PaymentTabState extends State<_PaymentTab> {
                       child: const Icon(Icons.receipt_long_rounded, color: AppTheme.primary, size: 22),
                     ),
                     title: Text(o.orderNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${o.orderType} • Table ${o.tableNumber ?? '—'}'),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        MoneyText(o.totalAmount, bold: true),
-                        StatusBadge(o.status),
-                      ],
-                    ),
+                    subtitle: AppBreakpoints.isPhone(context)
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${o.orderType} • Table ${o.tableNumber ?? '—'}'),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  MoneyText(o.totalAmount, bold: true),
+                                  const SizedBox(width: 8),
+                                  StatusBadge(o.status),
+                                ],
+                              ),
+                            ],
+                          )
+                        : Text('${o.orderType} • Table ${o.tableNumber ?? '—'}'),
+                    trailing: AppBreakpoints.isPhone(context)
+                        ? const Icon(Icons.chevron_right)
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              MoneyText(o.totalAmount, bold: true),
+                              StatusBadge(o.status),
+                            ],
+                          ),
                     onTap: () => _selectOrder(o),
                   ),
                 );
@@ -227,7 +295,7 @@ class _PaymentTabState extends State<_PaymentTab> {
     final fullyPaid = _summary?['is_fully_paid'] == true;
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: AppBreakpoints.pagePadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

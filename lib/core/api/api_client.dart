@@ -47,37 +47,6 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> register(String name, String email, String password) async {
-    try {
-      final res = await _dio.post('/auth/register', data: {
-        'name': name.trim(),
-        'email': email.trim().toLowerCase(),
-        'password': password,
-      });
-      final body = res.data as Map<String, dynamic>;
-      if (body['success'] != true) {
-        throw ApiException(body['message'] as String? ?? 'Sign up failed');
-      }
-      final data = body['data'] as Map<String, dynamic>;
-      await _prefs.setString(AppConfig.tokenKey, data['token'] as String);
-      return data;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.response == null) {
-        throw ApiException(
-          'Cannot reach API server.\n'
-          'Start backend: cd resto_pos_system\\backend then npm run dev',
-        );
-      }
-      final data = e.response?.data;
-      if (data is Map && data['message'] != null) {
-        throw ApiException(data['message'] as String);
-      }
-      throw ApiException(e.message ?? 'Request failed');
-    }
-  }
-
   Future<Map<String, dynamic>> login(String email, String password) async {
     final loginId = email.trim().toLowerCase();
     try {
@@ -112,8 +81,13 @@ class ApiClient {
 
   String _dioErrorMessage(DioException e) {
     final data = e.response?.data;
-    if (data is Map && data['message'] != null) {
-      return data['message'] as String;
+    if (data is Map) {
+      final message = data['message'] as String?;
+      final detail = data['error'] as String?;
+      if (message != null && detail != null && detail != message) {
+        return '$message ($detail)';
+      }
+      if (message != null) return message;
     }
     if (e.type == DioExceptionType.connectionError || e.response == null) {
       return 'Cannot reach API server. Start backend: npm.cmd run dev';

@@ -66,107 +66,90 @@ class SettingsSectionCard extends StatelessWidget {
   }
 }
 
-/// Dashboard metric tile.
-class MetricCard extends StatelessWidget {
-  const MetricCard({
+/// Compact stat tile for dashboard grids.
+class CompactMetricTile extends StatelessWidget {
+  const CompactMetricTile({
     super.key,
     required this.title,
     required this.icon,
     required this.color,
     this.value,
     this.amount,
+    this.subtitle,
+    this.onTap,
   });
 
   final String title;
   final String? value;
   final double? amount;
+  final String? subtitle;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 26),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(color: AppTheme.textMuted, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  if (amount != null)
-                    Text(
-                      formatPeso(amount!),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                    )
-                  else
-                    Text(
-                      value ?? '—',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Tappable shortcut on dashboard.
-class QuickActionCard extends StatelessWidget {
-  const QuickActionCard({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        side: BorderSide(color: Theme.of(context).dividerColor),
-      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                const Spacer(),
+                Icon(Icons.trending_up_rounded, size: 16, color: color.withValues(alpha: 0.5)),
+              ],
+            ),
+            const Spacer(),
+            if (amount != null)
+              Text(
+                formatPeso(amount!),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            else
+              Text(
+                value ?? '—',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 10),
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), textAlign: TextAlign.center),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : AppTheme.textMuted,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle!,
+                style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : AppTheme.textMuted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
+          ],
           ),
         ),
       ),
